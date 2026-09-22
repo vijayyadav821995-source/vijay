@@ -1,0 +1,810 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<style>
+  :root {
+    color-scheme: light dark;
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  body { margin: 0; font: 14px system-ui, -apple-system, "Segoe UI", sans-serif; }
+  img { max-width: 100%; }
+  [hidden] { display: none !important; }
+</style>
+<title>Cascade Lake microVM</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap">
+
+<style>
+  :root {
+    --plane:        #f4f6f8;
+    --surface:      #ffffff;
+    --surface-sunk: #eef1f4;
+    --ink:          #0d1117;
+    --ink-2:        #4a5259;
+    --muted:        #727b83;
+    --grid:         #e3e7eb;
+    --rule:         #dce1e6;
+    --accent:       #2a78d6;
+    --accent-soft:  rgba(42,120,214,0.10);
+    --warm:         #eb6834;
+    --warm-soft:    rgba(235,104,52,0.10);
+    --good:         #0ca30c;
+    --warning:      #fab219;
+    --critical:     #d03b3b;
+    --track:        #e8ecf0;
+    --shadow:       0 1px 2px rgba(13,17,23,0.05), 0 0 0 1px rgba(13,17,23,0.06);
+    --sans: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+    --mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --plane:        #0d0f11;
+      --surface:      #15181b;
+      --surface-sunk: #1b1f23;
+      --ink:          #eef1f4;
+      --ink-2:        #aab4bd;
+      --muted:        #7d868e;
+      --grid:         #242a2f;
+      --rule:         #262c32;
+      --accent:       #3987e5;
+      --accent-soft:  rgba(57,135,229,0.16);
+      --warm:         #d95926;
+      --warm-soft:    rgba(217,89,38,0.18);
+      --good:         #0ca30c;
+      --warning:      #fab219;
+      --critical:     #d03b3b;
+      --track:        #232930;
+      --shadow:       0 1px 2px rgba(0,0,0,0.4), 0 0 0 1px rgba(255,255,255,0.07);
+    }
+  }
+  :root[data-theme="dark"] {
+    --plane:        #0d0f11;
+    --surface:      #15181b;
+    --surface-sunk: #1b1f23;
+    --ink:          #eef1f4;
+    --ink-2:        #aab4bd;
+    --muted:        #7d868e;
+    --grid:         #242a2f;
+    --rule:         #262c32;
+    --accent:       #3987e5;
+    --accent-soft:  rgba(57,135,229,0.16);
+    --warm:         #d95926;
+    --warm-soft:    rgba(217,89,38,0.18);
+    --good:         #0ca30c;
+    --warning:      #fab219;
+    --critical:     #d03b3b;
+    --track:        #232930;
+    --shadow:       0 1px 2px rgba(0,0,0,0.4), 0 0 0 1px rgba(255,255,255,0.07);
+  }
+
+  body {
+    background: var(--plane);
+    color: var(--ink);
+    font-family: var(--sans);
+    font-size: 15px;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap {
+    max-width: 880px;
+    margin: 0 auto;
+    padding-inline: 20px;
+    padding-block: 0 72px;
+  }
+
+  /* ---------- masthead ---------- */
+  .mast { padding-block: 44px 28px; border-bottom: 2px solid var(--ink); }
+  .eyebrow {
+    font-family: var(--mono); font-size: 11px; font-weight: 500;
+    letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted);
+    display: flex; flex-wrap: wrap; gap: 6px 14px; margin-bottom: 18px;
+  }
+  .eyebrow .sep { color: var(--rule); }
+  h1 {
+    font-size: clamp(28px, 6.5vw, 42px); font-weight: 700; line-height: 1.12;
+    letter-spacing: -0.021em; margin: 0 0 14px; text-wrap: balance;
+  }
+  .standfirst {
+    font-size: 17px; color: var(--ink-2); margin: 0; max-width: 62ch;
+    text-wrap: pretty;
+  }
+
+  /* ---------- scope callout ---------- */
+  .scope {
+    margin-top: 26px; padding: 15px 17px; background: var(--warm-soft);
+    border-left: 3px solid var(--warm); border-radius: 0 6px 6px 0;
+    font-size: 14px; color: var(--ink-2);
+  }
+  .scope strong { color: var(--ink); font-weight: 600; }
+
+  /* ---------- sections ---------- */
+  section { padding-block: 40px 0; }
+  h2 {
+    font-size: 13px; font-family: var(--mono); font-weight: 600;
+    letter-spacing: 0.1em; text-transform: uppercase; color: var(--accent);
+    margin: 0 0 6px;
+  }
+  h3 {
+    font-size: 21px; font-weight: 600; letter-spacing: -0.013em;
+    margin: 0 0 12px; text-wrap: balance;
+  }
+  p { margin: 0 0 14px; max-width: 66ch; text-wrap: pretty; }
+  .lede { color: var(--ink-2); }
+
+  /* ---------- spec card ---------- */
+  .spec {
+    margin-top: 22px; background: var(--surface); border-radius: 10px;
+    box-shadow: var(--shadow); overflow: hidden;
+  }
+  .spec-row {
+    display: grid; grid-template-columns: 116px 1fr; gap: 14px;
+    padding: 11px 18px; border-top: 1px solid var(--rule); align-items: baseline;
+  }
+  .spec-row:first-child { border-top: none; }
+  .spec-k {
+    font-family: var(--mono); font-size: 11px; font-weight: 500;
+    letter-spacing: 0.07em; text-transform: uppercase; color: var(--muted);
+  }
+  .spec-v { font-size: 14px; }
+  .spec-v .mono { font-family: var(--mono); font-size: 13px; }
+  .flags { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 2px; }
+  .flag {
+    font-family: var(--mono); font-size: 11px; padding: 2px 7px;
+    background: var(--accent-soft); color: var(--accent);
+    border-radius: 4px; font-weight: 500;
+  }
+  .flag.absent {
+    background: transparent; color: var(--muted);
+    box-shadow: inset 0 0 0 1px var(--rule); text-decoration: line-through;
+    text-decoration-color: var(--critical); text-decoration-thickness: 1px;
+  }
+
+  /* ---------- KPI row ---------- */
+  .kpis {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 1px; background: var(--rule); border-radius: 10px; overflow: hidden;
+    margin-top: 22px; box-shadow: var(--shadow);
+  }
+  .kpi { background: var(--surface); padding: 16px 18px 15px; }
+  .kpi-v {
+    font-size: 27px; font-weight: 600; letter-spacing: -0.02em;
+    line-height: 1.1; color: var(--ink);
+  }
+  .kpi-v .u { font-size: 14px; font-weight: 500; color: var(--muted); margin-left: 2px; }
+  .kpi-k {
+    font-family: var(--mono); font-size: 10.5px; font-weight: 500;
+    letter-spacing: 0.08em; text-transform: uppercase;
+    color: var(--muted); margin-top: 6px;
+  }
+
+  /* ---------- verdict strip ---------- */
+  .verdict { margin-top: 22px; display: flex; flex-direction: column; gap: 1px;
+    background: var(--rule); border-radius: 10px; overflow: hidden; box-shadow: var(--shadow); }
+  .v-row {
+    background: var(--surface); display: grid;
+    grid-template-columns: 3px 1fr auto; gap: 0 14px; align-items: center;
+    padding: 0; }
+  .v-stripe { align-self: stretch; }
+  .v-body { padding: 12px 0 12px 14px; }
+  .v-name { font-size: 14.5px; font-weight: 600; }
+  .v-why { font-size: 13px; color: var(--ink-2); font-family: var(--mono); margin-top: 2px; }
+  .v-rate {
+    padding-right: 16px; font-family: var(--mono); font-size: 11px; font-weight: 600;
+    letter-spacing: 0.07em; text-transform: uppercase; white-space: nowrap;
+  }
+
+  /* ---------- charts ---------- */
+  .chart {
+    margin-top: 20px; background: var(--surface); border-radius: 10px;
+    box-shadow: var(--shadow); padding: 18px 18px 14px;
+  }
+  .chart-title { font-size: 14.5px; font-weight: 600; margin-bottom: 2px; }
+  .chart-sub {
+    font-family: var(--mono); font-size: 11.5px; color: var(--muted);
+    margin-bottom: 16px;
+  }
+  .bars { display: flex; flex-direction: column; gap: 10px; }
+  .bar-row {
+    display: grid; grid-template-columns: minmax(78px, 132px) 1fr;
+    gap: 12px; align-items: center; cursor: default;
+  }
+  .bar-lab {
+    font-family: var(--mono); font-size: 12px; color: var(--ink-2);
+    text-align: right; overflow-wrap: anywhere;
+  }
+  .bar-track {
+    display: grid; grid-template-columns: 1fr max-content; gap: 8px;
+    align-items: center; min-width: 0;
+  }
+  .bar-zone {
+    display: flex; align-items: center; min-width: 0; min-height: 20px;
+    background: linear-gradient(var(--track), var(--track)) left center / 100% 1px no-repeat;
+  }
+  .bar-fill {
+    height: 16px; border-radius: 0 4px 4px 0; background: var(--accent);
+    min-width: 3px; flex: none;
+    transition: filter .12s ease;
+  }
+  .bar-fill.warm { background: var(--warm); }
+  .bar-row:hover .bar-fill { filter: brightness(1.12); }
+  .bar-val {
+    font-family: var(--mono); font-size: 12.5px; font-weight: 500;
+    color: var(--ink); white-space: nowrap; font-variant-numeric: tabular-nums;
+  }
+  .bar-val .note { color: var(--muted); font-weight: 400; }
+  .axis {
+    margin-top: 12px; padding-top: 8px; border-top: 1px solid var(--grid);
+    font-family: var(--mono); font-size: 10.5px; color: var(--muted);
+    display: flex; justify-content: space-between;
+  }
+
+  details.table { margin-top: 12px; }
+  details.table summary {
+    font-family: var(--mono); font-size: 11px; color: var(--muted);
+    cursor: pointer; letter-spacing: 0.06em; text-transform: uppercase;
+    padding: 4px 0; list-style: revert;
+  }
+  details.table summary:hover { color: var(--accent); }
+  .t-scroll { overflow-x: auto; margin-top: 8px; }
+  table { border-collapse: collapse; font-size: 12.5px; width: 100%; min-width: 300px; }
+  th, td {
+    text-align: left; padding: 6px 12px 6px 0; border-bottom: 1px solid var(--grid);
+    font-family: var(--mono); font-variant-numeric: tabular-nums; white-space: nowrap;
+  }
+  th { color: var(--muted); font-weight: 500; font-size: 11px;
+       letter-spacing: 0.06em; text-transform: uppercase; }
+  td { color: var(--ink-2); }
+  td:first-child { color: var(--ink); }
+
+  /* ---------- terminal block ---------- */
+  .term {
+    margin-top: 16px; background: var(--surface-sunk); border-radius: 8px;
+    padding: 14px 16px; overflow-x: auto;
+    box-shadow: inset 0 0 0 1px var(--rule);
+  }
+  .term pre {
+    margin: 0; font-family: var(--mono); font-size: 12.5px; line-height: 1.65;
+    color: var(--ink-2);
+  }
+  .term .c { color: var(--muted); }
+  .term .hi { color: var(--ink); font-weight: 500; }
+  .term .bad { color: var(--critical); font-weight: 500; }
+
+  /* ---------- findings ---------- */
+  .finding {
+    margin-top: 18px; padding: 15px 17px; border-radius: 8px;
+    background: var(--surface); box-shadow: var(--shadow);
+    border-left: 3px solid var(--accent);
+  }
+  .finding.warn { border-left-color: var(--warm); }
+  .finding-h {
+    font-size: 11px; font-family: var(--mono); font-weight: 600;
+    letter-spacing: 0.1em; text-transform: uppercase; color: var(--accent);
+    margin-bottom: 5px;
+  }
+  .finding.warn .finding-h { color: var(--warm); }
+  .finding p { margin: 0; font-size: 14px; color: var(--ink-2); max-width: none; }
+  .finding p + p { margin-top: 9px; }
+  .finding strong { color: var(--ink); font-weight: 600; }
+
+  /* ---------- actions ---------- */
+  ol.actions { margin: 20px 0 0; padding: 0; list-style: none;
+    display: flex; flex-direction: column; gap: 1px;
+    background: var(--rule); border-radius: 10px; overflow: hidden; box-shadow: var(--shadow); }
+  ol.actions li { background: var(--surface); padding: 14px 18px; font-size: 14px; }
+  ol.actions .a-h { font-weight: 600; color: var(--ink); font-size: 14.5px; }
+  ol.actions .a-b { color: var(--ink-2); margin-top: 3px; }
+  code {
+    font-family: var(--mono); font-size: 0.89em; background: var(--surface-sunk);
+    padding: 1.5px 5px; border-radius: 4px; box-shadow: inset 0 0 0 1px var(--rule);
+  }
+
+  footer {
+    margin-top: 44px; padding-top: 20px; border-top: 1px solid var(--rule);
+    font-family: var(--mono); font-size: 11.5px; color: var(--muted);
+    line-height: 1.7;
+  }
+
+  @media (max-width: 460px) {
+    .spec-row { grid-template-columns: 1fr; gap: 3px; }
+    .bar-row { grid-template-columns: 1fr; gap: 3px; }
+    .bar-lab { text-align: left; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    * { transition: none !important; animation: none !important; }
+  }
+  :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 3px; }
+</style>
+
+</head>
+<body>
+<div class="wrap">
+
+  <header class="mast">
+    <div class="eyebrow">
+      <span>Benchmark report</span><span class="sep">/</span>
+      <span>2026-09-22</span><span class="sep">/</span>
+      <span>env_01HufUAhDGRpneacqjcsQYU6</span>
+    </div>
+    <h1>Fast cores, slow growth, capped writes</h1>
+    <p class="standfirst">A measured profile of the Anthropic-cloud microVM behind this
+    Claude Code session &mdash; four dedicated Cascade Lake vCPUs that scale perfectly,
+    a one-time memory tax of 5.5&nbsp;s per gigabyte, and a disk that reads 14&times;
+    faster than it writes.</p>
+    <div class="scope">
+      <strong>Scope.</strong> The client device &mdash; an Android handset &mdash; exposes no
+      telemetry to this session; the only thing reported about it is the string
+      <span style="font-family:var(--mono)">android</span>. Everything below measures the
+      remote Linux microVM where code actually executes, which is what governs how fast
+      work runs.
+    </div>
+  </header>
+
+  <section>
+    <h2>Machine</h2>
+    <h3>What the hypervisor hands over</h3>
+    <div class="spec">
+      <div class="spec-row">
+        <div class="spec-k">CPU</div>
+        <div class="spec-v">Intel Xeon @ 2.80&nbsp;GHz &middot; <span class="mono">family 6, model 85, stepping 7</span> &mdash; Cascade Lake</div>
+      </div>
+      <div class="spec-row">
+        <div class="spec-k">Topology</div>
+        <div class="spec-v">4&nbsp;vCPU / 4&nbsp;cores / 1&nbsp;thread per core &mdash; no SMT, 1 NUMA node</div>
+      </div>
+      <div class="spec-row">
+        <div class="spec-k">Cache</div>
+        <div class="spec-v"><span class="mono">L1d 128&nbsp;KiB &middot; L2 4&nbsp;MiB &middot; L3 33&nbsp;MiB</span></div>
+      </div>
+      <div class="spec-row">
+        <div class="spec-k">ISA</div>
+        <div class="spec-v">
+          <div class="flags">
+            <span class="flag">avx512f</span><span class="flag">avx512dq</span>
+            <span class="flag">avx512bw</span><span class="flag">avx512vl</span>
+            <span class="flag">avx512_vnni</span><span class="flag">aes</span>
+            <span class="flag">bmi2</span><span class="flag">rtm</span>
+            <span class="flag absent">sha_ni</span>
+          </div>
+        </div>
+      </div>
+      <div class="spec-row">
+        <div class="spec-k">Memory</div>
+        <div class="spec-v">15&nbsp;GiB, <strong>zero swap</strong> &middot; <span class="mono">transparent_hugepage = [madvise]</span></div>
+      </div>
+      <div class="spec-row">
+        <div class="spec-k">Disk</div>
+        <div class="spec-v"><strong>30&nbsp;GiB free</strong> of a 252&nbsp;GiB <span class="mono">/dev/vda</span> &mdash; the allowance, not the device, is the limit</div>
+      </div>
+      <div class="spec-row">
+        <div class="spec-k">Virt</div>
+        <div class="spec-v">KVM, full virtualization</div>
+      </div>
+    </div>
+
+    <div class="kpis">
+      <div class="kpi">
+        <div class="kpi-v">3.99<span class="u">&times;</span></div>
+        <div class="kpi-k">4-thread scaling</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-v">0<span class="u">%</span></div>
+        <div class="kpi-k">CPU steal</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-v">23.0<span class="u">GB/s</span></div>
+        <div class="kpi-k">Warm memory</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-v">170<span class="u">MB/s</span></div>
+        <div class="kpi-k">Disk write cap</div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Verdict</h2>
+    <h3>Strong compute box, constrained on disk write and space</h3>
+    <p class="lede">Three subsystems limit real work here. Everything else is out of the way.</p>
+    <div class="verdict">
+      <div class="v-row">
+        <div class="v-stripe" style="background:var(--good)"></div>
+        <div class="v-body"><div class="v-name">CPU throughput</div>
+          <div class="v-why">1630 Mops/s aggregate &middot; 0% steal</div></div>
+        <div class="v-rate" style="color:var(--good)">Excellent</div>
+      </div>
+      <div class="v-row">
+        <div class="v-stripe" style="background:var(--warning)"></div>
+        <div class="v-body"><div class="v-name">CPU crypto</div>
+          <div class="v-why">AES-NI 1.16 GB/s &middot; no sha_ni &rarr; 5&times; hash tax</div></div>
+        <div class="v-rate" style="color:var(--warning)">Mixed</div>
+      </div>
+      <div class="v-row">
+        <div class="v-stripe" style="background:var(--good)"></div>
+        <div class="v-body"><div class="v-name">Memory, warm</div>
+          <div class="v-why">23.0 GB/s copy &middot; 17.2 GB/s triad</div></div>
+        <div class="v-rate" style="color:var(--good)">Excellent</div>
+      </div>
+      <div class="v-row">
+        <div class="v-stripe" style="background:var(--critical)"></div>
+        <div class="v-body"><div class="v-name">Memory, growth</div>
+          <div class="v-why">21.3 &micro;s/page first touch &asymp; 5.5 s per GB</div></div>
+        <div class="v-rate" style="color:var(--critical)">Weak</div>
+      </div>
+      <div class="v-row">
+        <div class="v-stripe" style="background:var(--good)"></div>
+        <div class="v-body"><div class="v-name">Disk read</div>
+          <div class="v-why">2.3 GB/s O_DIRECT &middot; 7.5 GB/s cached</div></div>
+        <div class="v-rate" style="color:var(--good)">Excellent</div>
+      </div>
+      <div class="v-row">
+        <div class="v-stripe" style="background:var(--critical)"></div>
+        <div class="v-body"><div class="v-name">Disk write</div>
+          <div class="v-why">hard-capped 165&ndash;179 MB/s, no burst</div></div>
+        <div class="v-rate" style="color:var(--critical)">Weak</div>
+      </div>
+      <div class="v-row">
+        <div class="v-stripe" style="background:var(--critical)"></div>
+        <div class="v-body"><div class="v-name">Disk capacity</div>
+          <div class="v-why">30 GiB free &mdash; tightest real constraint</div></div>
+        <div class="v-rate" style="color:var(--critical)">Weak</div>
+      </div>
+      <div class="v-row">
+        <div class="v-stripe" style="background:var(--good)"></div>
+        <div class="v-body"><div class="v-name">Filesystem metadata</div>
+          <div class="v-why">35,677 creates/s &middot; 0.32 ms fsync</div></div>
+        <div class="v-rate" style="color:var(--good)">Excellent</div>
+      </div>
+      <div class="v-row">
+        <div class="v-stripe" style="background:var(--good)"></div>
+        <div class="v-body"><div class="v-name">Network</div>
+          <div class="v-why">62 MB/s bulk &middot; ~120 ms TTFB proxied</div></div>
+        <div class="v-rate" style="color:var(--good)">Good</div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Evidence 01</h2>
+    <h3>The cores are real, not burst credit</h3>
+    <p class="lede">A dependent floating-point chain defeats vectorization, so this measures
+    per-core execution rather than SIMD width. Running it on 1, 2 and 4 threads gives
+    near-perfect linear aggregate throughput.</p>
+
+    <div class="chart">
+      <div class="chart-title">Aggregate throughput by thread count</div>
+      <div class="chart-sub">dependent FP chain, 200M iterations per thread &middot; higher is better</div>
+      <div class="bars">
+        <div class="bar-row" title="1 thread: 408.1 Mops/s in 0.490 s">
+          <div class="bar-lab">1 thread</div>
+          <div class="bar-track">
+            <div class="bar-zone"><div class="bar-fill" style="width:25.0%"></div></div>
+            <div class="bar-val">408 <span class="note">Mops/s &middot; 1.00&times;</span></div>
+          </div>
+        </div>
+        <div class="bar-row" title="2 threads: 816.4 Mops/s in 0.490 s">
+          <div class="bar-lab">2 threads</div>
+          <div class="bar-track">
+            <div class="bar-zone"><div class="bar-fill" style="width:50.1%"></div></div>
+            <div class="bar-val">816 <span class="note">Mops/s &middot; 2.00&times;</span></div>
+          </div>
+        </div>
+        <div class="bar-row" title="4 threads: 1630.3 Mops/s in 0.491 s">
+          <div class="bar-lab">4 threads</div>
+          <div class="bar-track">
+            <div class="bar-zone"><div class="bar-fill" style="width:100%"></div></div>
+            <div class="bar-val">1630 <span class="note">Mops/s &middot; 3.99&times;</span></div>
+          </div>
+        </div>
+      </div>
+      <div class="axis"><span>0</span><span>1630 Mops/s</span></div>
+      <details class="table">
+        <summary>Data table</summary>
+        <div class="t-scroll">
+        <table>
+          <thead><tr><th>Threads</th><th>Wall time</th><th>Aggregate</th><th>Scaling</th></tr></thead>
+          <tbody>
+            <tr><td>1</td><td>0.490 s</td><td>408.1 Mops/s</td><td>1.00&times;</td></tr>
+            <tr><td>2</td><td>0.490 s</td><td>816.4 Mops/s</td><td>2.00&times;</td></tr>
+            <tr><td>4</td><td>0.491 s</td><td>1630.3 Mops/s</td><td>3.99&times;</td></tr>
+          </tbody>
+        </table>
+        </div>
+      </details>
+    </div>
+
+    <p>Wall time held at 0.490&nbsp;s whether one core or all four were busy. Paired with a
+    flat <strong>0% steal</strong> across every <code>vmstat</code> sample, that rules out
+    oversubscription: these are dedicated cores, and <code>-j4</code> is honest.</p>
+
+    <div class="term"><pre> r  b   swpd     free  ... us sy id wa <span class="hi">st</span> gu
+ 0  0      0 15722332  ...  5  4 90  0  <span class="hi">0</span>  0
+ 0  0      0 15722124  ...  0  0 99  0  <span class="hi">0</span>  0
+ 1  0      0 15672720  ...  0  0 100 0  <span class="hi">0</span>  0
+ 0  0      0 15721872  ...  0  0 100 0  <span class="hi">0</span>  0
+ 0  0      0 15721872  ...  0  0 100 0  <span class="hi">0</span>  0</pre></div>
+
+    <div class="finding warn">
+      <div class="finding-h">Gap &mdash; no SHA extensions</div>
+      <p><code>sha_ni</code> is absent from the CPU flags, so SHA-256 runs in software at
+      <strong>395 MB/s</strong> single-threaded where the hardware path would give roughly
+      2&nbsp;GB/s. AES-NI <em>is</em> present and delivers 1.16&nbsp;GB/s on AES-256-CBC.</p>
+      <p>This taxes git object hashing, checksum verification and container-layer work by
+      about 5&times;. It is a property of the host CPU model, not something tuning can fix.</p>
+    </div>
+  </section>
+
+  <section>
+    <h2>Evidence 02</h2>
+    <h3>Memory is fast &mdash; until you ask for more of it</h3>
+    <p class="lede">The most consequential finding. Touching one byte per page across a fresh
+    512&nbsp;MB mapping costs 21.3&nbsp;&micro;s per page the first time. Repeat the identical
+    allocation and it drops 13&times;.</p>
+
+    <div class="chart">
+      <div class="chart-title">First-touch cost per 4 KiB page</div>
+      <div class="chart-sub">three identical 512 MB mmap / touch / munmap rounds &middot; lower is better</div>
+      <div class="bars">
+        <div class="bar-row" title="Round 0: 2.795 s total, 183 MB/s, 21.3 µs/page">
+          <div class="bar-lab">Round 0</div>
+          <div class="bar-track">
+            <div class="bar-zone"><div class="bar-fill warm" style="width:100%"></div></div>
+            <div class="bar-val">21.3 <span class="note">&micro;s &middot; 2.795 s total</span></div>
+          </div>
+        </div>
+        <div class="bar-row" title="Round 1: 0.205 s total, 2494 MB/s, 1.6 µs/page">
+          <div class="bar-lab">Round 1</div>
+          <div class="bar-track">
+            <div class="bar-zone"><div class="bar-fill" style="width:7.5%"></div></div>
+            <div class="bar-val">1.6 <span class="note">&micro;s &middot; 0.205 s total</span></div>
+          </div>
+        </div>
+        <div class="bar-row" title="Round 2: 0.188 s total, 2728 MB/s, 1.4 µs/page">
+          <div class="bar-lab">Round 2</div>
+          <div class="bar-track">
+            <div class="bar-zone"><div class="bar-fill" style="width:6.6%"></div></div>
+            <div class="bar-val">1.4 <span class="note">&micro;s &middot; 0.188 s total</span></div>
+          </div>
+        </div>
+      </div>
+      <div class="axis"><span>0</span><span>21.3 &micro;s/page</span></div>
+      <details class="table">
+        <summary>Data table</summary>
+        <div class="t-scroll">
+        <table>
+          <thead><tr><th>Round</th><th>First touch</th><th>Rate</th><th>Per page</th><th>Warm memset</th></tr></thead>
+          <tbody>
+            <tr><td>0</td><td>2.795 s</td><td>183 MB/s</td><td>21.3 &micro;s</td><td>0.047 s &mdash; 10.5 GB/s</td></tr>
+            <tr><td>1</td><td>0.205 s</td><td>2494 MB/s</td><td>1.6 &micro;s</td><td>0.047 s &mdash; 10.7 GB/s</td></tr>
+            <tr><td>2</td><td>0.188 s</td><td>2728 MB/s</td><td>1.4 &micro;s</td><td>0.047 s &mdash; 10.5 GB/s</td></tr>
+          </tbody>
+        </table>
+        </div>
+      </details>
+    </div>
+
+    <div class="finding warn">
+      <div class="finding-h">Root cause</div>
+      <p>The first time a process grows into fresh memory, the hypervisor populates host
+      backing on demand &mdash; roughly <strong>5.5 seconds per gigabyte</strong> of new
+      resident set. Once the guest kernel holds those pages, re-faulting them costs
+      1.4&nbsp;&micro;s and access runs at the full 23&nbsp;GB/s.</p>
+      <p>Compounding it, <code>transparent_hugepage</code> is set to <code>[madvise]</code>,
+      so huge pages are <strong>off unless a program asks</strong>. That is why random access
+      measures 151&nbsp;ns &mdash; TLB-miss heavy on 4&nbsp;KiB pages &mdash; and why fault
+      counts stay high.</p>
+      <p>In practice: a large first build, a dataset load, or a heavy Node/JVM heap stalls for
+      several seconds with no output. That is memory population, not a hang. It does not repeat.</p>
+    </div>
+
+    <div class="chart">
+      <div class="chart-title">Warm memory bandwidth</div>
+      <div class="chart-sub">512 MB working set, after population &middot; higher is better</div>
+      <div class="bars">
+        <div class="bar-row" title="memcpy, warm: 23.0 GB/s (0.043 s per pass)">
+          <div class="bar-lab">memcpy</div>
+          <div class="bar-track">
+            <div class="bar-zone"><div class="bar-fill" style="width:100%"></div></div>
+            <div class="bar-val">23.0 <span class="note">GB/s</span></div>
+          </div>
+        </div>
+        <div class="bar-row" title="STREAM triad: 17.2 GB/s effective">
+          <div class="bar-lab">STREAM triad</div>
+          <div class="bar-track">
+            <div class="bar-zone"><div class="bar-fill" style="width:74.8%"></div></div>
+            <div class="bar-val">17.2 <span class="note">GB/s eff.</span></div>
+          </div>
+        </div>
+        <div class="bar-row" title="memset, warm: 10.5 GB/s">
+          <div class="bar-lab">memset</div>
+          <div class="bar-track">
+            <div class="bar-zone"><div class="bar-fill" style="width:45.7%"></div></div>
+            <div class="bar-val">10.5 <span class="note">GB/s</span></div>
+          </div>
+        </div>
+      </div>
+      <div class="axis"><span>0</span><span>23.0 GB/s</span></div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Evidence 03</h2>
+    <h3>The disk reads 14&times; faster than it writes</h3>
+    <p class="lede">Four consecutive 256&nbsp;MB writes with <code>fdatasync</code> landed
+    between 165 and 179&nbsp;MB/s &mdash; a steady ceiling, not an exhausted burst credit.
+    Reads are in a different league entirely.</p>
+
+    <div class="chart">
+      <div class="chart-title">Sequential throughput</div>
+      <div class="chart-sub">1 GB transfers &middot; blue = read, orange = write &middot; linear scale, higher is better</div>
+      <div class="bars">
+        <div class="bar-row" title="Read via page cache: 7.5 GB/s (0.143 s for 1 GB)">
+          <div class="bar-lab">Read, cached</div>
+          <div class="bar-track">
+            <div class="bar-zone"><div class="bar-fill" style="width:100%"></div></div>
+            <div class="bar-val">7500 <span class="note">MB/s</span></div>
+          </div>
+        </div>
+        <div class="bar-row" title="Read with O_DIRECT, bypassing cache: 2.3 GB/s (0.469 s for 1 GB)">
+          <div class="bar-lab">Read, O_DIRECT</div>
+          <div class="bar-track">
+            <div class="bar-zone"><div class="bar-fill" style="width:30.7%"></div></div>
+            <div class="bar-val">2300 <span class="note">MB/s</span></div>
+          </div>
+        </div>
+        <div class="bar-row" title="Write with fdatasync: 166 MB/s (6.477 s for 1 GB)">
+          <div class="bar-lab">Write, fdatasync</div>
+          <div class="bar-track">
+            <div class="bar-zone"><div class="bar-fill warm" style="width:2.2%"></div></div>
+            <div class="bar-val">166 <span class="note">MB/s</span></div>
+          </div>
+        </div>
+      </div>
+      <div class="axis"><span>0</span><span>7500 MB/s</span></div>
+      <details class="table">
+        <summary>Data table &mdash; including the four-run write series</summary>
+        <div class="t-scroll">
+        <table>
+          <thead><tr><th>Operation</th><th>Size</th><th>Time</th><th>Rate</th></tr></thead>
+          <tbody>
+            <tr><td>Read, page cache</td><td>1 GiB</td><td>0.143 s</td><td>7.5 GB/s</td></tr>
+            <tr><td>Read, O_DIRECT</td><td>1 GiB</td><td>0.469 s</td><td>2.3 GB/s</td></tr>
+            <tr><td>Write, fdatasync</td><td>1 GiB</td><td>6.477 s</td><td>166 MB/s</td></tr>
+            <tr><td>Write run 1</td><td>256 MiB</td><td>1.502 s</td><td>179 MB/s</td></tr>
+            <tr><td>Write run 2</td><td>256 MiB</td><td>1.579 s</td><td>170 MB/s</td></tr>
+            <tr><td>Write run 3</td><td>256 MiB</td><td>1.625 s</td><td>165 MB/s</td></tr>
+            <tr><td>Write run 4</td><td>256 MiB</td><td>1.611 s</td><td>167 MB/s</td></tr>
+          </tbody>
+        </table>
+        </div>
+      </details>
+    </div>
+
+    <p>That sliver is the finding, not a rendering artifact: write throughput is
+    <strong>2.2%</strong> of cached read throughput on the same device. Write-heavy work
+    &mdash; a large <code>npm install</code>, a Docker layer export, bulky build output
+    &mdash; is the one place this machine will make you wait.</p>
+
+    <div class="finding">
+      <div class="finding-h">The counterweight &mdash; metadata is superb</div>
+      <p>Durability and small-file operations are excellent, so git, compilers and anything
+      juggling thousands of small files feel immediate.</p>
+      <div class="term" style="margin-top:12px"><pre><span class="c">fsync  &times;300  </span>0.096 s  <span class="hi">0.32 ms each</span>  <span class="c">(3117 durable IOPS)</span>
+<span class="c">create &times;5000 </span>0.140 s  <span class="hi">35,677/s</span>
+<span class="c">stat   &times;5000 </span>0.008 s  <span class="hi">613,409/s</span>
+<span class="c">unlink &times;5000 </span>0.021 s  <span class="hi">234,082/s</span></pre></div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Evidence 04</h2>
+    <h3>Startup latency and the network path</h3>
+    <p class="lede">Best of seven runs each. Node is the slowest interpreter to start by
+    2.5&times; and the most variable &mdash; 30.3&nbsp;ms best against a 42.6&nbsp;ms median.
+    In a loop that spawns Node per file, that dominates everything else.</p>
+
+    <div class="chart">
+      <div class="chart-title">Process startup, best of 7</div>
+      <div class="chart-sub">cold-start wall time to exit &middot; lower is better</div>
+      <div class="bars">
+        <div class="bar-row" title="git --version: 1.7 ms best">
+          <div class="bar-lab">git</div>
+          <div class="bar-track"><div class="bar-zone"><div class="bar-fill" style="width:5.6%"></div></div>
+            <div class="bar-val">1.7 <span class="note">ms</span></div></div>
+        </div>
+        <div class="bar-row" title="gcc --version: 1.7 ms best">
+          <div class="bar-lab">gcc</div>
+          <div class="bar-track"><div class="bar-zone"><div class="bar-fill" style="width:5.6%"></div></div>
+            <div class="bar-val">1.7 <span class="note">ms</span></div></div>
+        </div>
+        <div class="bar-row" title="bash -c : — 2.1 ms best">
+          <div class="bar-lab">bash</div>
+          <div class="bar-track"><div class="bar-zone"><div class="bar-fill" style="width:6.9%"></div></div>
+            <div class="bar-val">2.1 <span class="note">ms</span></div></div>
+        </div>
+        <div class="bar-row" title="python3 -c pass: 12.2 ms best">
+          <div class="bar-lab">python3</div>
+          <div class="bar-track"><div class="bar-zone"><div class="bar-fill" style="width:40.3%"></div></div>
+            <div class="bar-val">12.2 <span class="note">ms</span></div></div>
+        </div>
+        <div class="bar-row" title="python3 with json, os, re imported: 20.8 ms best">
+          <div class="bar-lab">python3 +imports</div>
+          <div class="bar-track"><div class="bar-zone"><div class="bar-fill" style="width:68.6%"></div></div>
+            <div class="bar-val">20.8 <span class="note">ms</span></div></div>
+        </div>
+        <div class="bar-row" title="node -e 0 — 30.3 ms best, 42.6 ms median">
+          <div class="bar-lab">node</div>
+          <div class="bar-track"><div class="bar-zone"><div class="bar-fill warm" style="width:100%"></div></div>
+            <div class="bar-val">30.3 <span class="note">ms &middot; median 42.6</span></div></div>
+        </div>
+      </div>
+      <div class="axis"><span>0</span><span>30.3 ms</span></div>
+    </div>
+
+    <p>Git on the working repository is effectively free &mdash; <code>git status</code>
+    2.5&nbsp;ms, <code>git log -50</code> 2.3&nbsp;ms, <code>git diff HEAD</code>
+    2.2&nbsp;ms &mdash; though on a 304&nbsp;KB checkout that measures process startup more
+    than git itself.</p>
+
+    <div class="finding">
+      <div class="finding-h">Network &mdash; two different paths</div>
+      <p>Bulk download reached <strong>62 MB/s</strong>. TLS handshake runs ~85&nbsp;ms and
+      TTFB to the GitHub API settles at 119&ndash;149&nbsp;ms after a 321&nbsp;ms cold first
+      call. DNS is locally cached at ~0.02&nbsp;ms.</p>
+      <p>Package registries &mdash; <code>registry.npmjs.org</code>, <code>pypi.org</code>,
+      <code>files.pythonhosted.org</code>, <code>index.crates.io</code>,
+      <code>proxy.golang.org</code> &mdash; sit in the proxy's <code>noProxy</code> list and
+      go direct. GitHub API traffic <em>is</em> proxied and carries the full round trip.</p>
+    </div>
+  </section>
+
+  <section>
+    <h2>Actions</h2>
+    <h3>What to do with this</h3>
+    <ol class="actions">
+      <li>
+        <div class="a-h">Budget 30 GiB, not 252 GiB.</div>
+        <div class="a-b"><code>df</code> advertises a 252&nbsp;G device but the session
+        allowance is 30&nbsp;G. This is the most likely real failure &mdash; a deep clone or a
+        large <code>node_modules</code> tree hits it before anything else does.</div>
+      </li>
+      <li>
+        <div class="a-h">Expect one slow pass, then speed.</div>
+        <div class="a-b">A first build that stalls for several seconds with no output is the
+        memory-population tax at 5.5&nbsp;s/GB. Don't kill it &mdash; it never repeats.</div>
+      </li>
+      <li>
+        <div class="a-h">Parallelize freely &mdash; <code>-j4</code> is honest.</div>
+        <div class="a-b">Unlike burst-credit VMs, sustained four-core load costs nothing here.
+        Scaling measured 3.99&times; with zero steal.</div>
+      </li>
+      <li>
+        <div class="a-h">Avoid write-amplifying steps.</div>
+        <div class="a-b">Prefer <code>git clone --depth</code>, skip large intermediate
+        artifacts, and pipe rather than staging through disk. 170&nbsp;MB/s is the floor
+        you will hit.</div>
+      </li>
+      <li>
+        <div class="a-h">Ask for huge pages in numeric code.</div>
+        <div class="a-b"><code>madvise(MADV_HUGEPAGE)</code> would meaningfully cut the
+        151&nbsp;ns random-access latency. THP will not engage on its own at this setting.</div>
+      </li>
+    </ol>
+  </section>
+
+  <footer>
+    Measured on an idle container &mdash; load average 0.08, one minute after boot.
+    Under concurrent load the CPU figures divide as expected; the disk write cap and the
+    memory fault tax are structural and will not improve.<br>
+    Tools: hand-written C (gcc -O2), OpenSSL speed, dd, Python timing harnesses, curl, vmstat.
+    <code>sysbench</code> and <code>fio</code> were unavailable.
+  </footer>
+
+</div>
+
+</body>
+</html>
