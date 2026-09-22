@@ -11,6 +11,7 @@ This repo is a starting point — a place to learn Git and GitHub by doing.
 | `README.md` | This file. GitHub shows it on the repo's front page. |
 | `docs/github-basics.md` | A plain-English guide to Git and GitHub for beginners. |
 | `docs/cheatsheet.md` | The commands you'll actually type, day to day. |
+| `docs/microvm-benchmark-report.html` | A performance report for the cloud container this repo builds in. Open it in a browser. |
 | `.gitignore` | Tells Git which files to *not* track (secrets, build output, junk). |
 | `hello/` | A tiny working example you can open in a browser. |
 
