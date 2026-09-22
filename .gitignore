@@ -1,0 +1,30 @@
+# --- Secrets: NEVER commit these ---
+.env
+.env.*
+*.pem
+*.key
+credentials.json
+secrets.yml
+
+# --- Dependencies / build output (can always be regenerated) ---
+node_modules/
+dist/
+build/
+out/
+target/
+*.log
+
+# --- Python ---
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+env/
+*.egg-info/
+
+# --- Editor & OS junk ---
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.swp

@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Hello from GitHub</title>
+  <style>
+    :root {
+      --bg: #fbfaf9;
+      --fg: #1f1d1a;
+      --muted: #6b6560;
+      --accent: #c4633f;
+      --card: #ffffff;
+      --border: #e8e4df;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #171614;
+        --fg: #f2efeb;
+        --muted: #a39d96;
+        --accent: #e08a63;
+        --card: #211f1c;
+        --border: #35322e;
+      }
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      padding: 16px;
+      background: var(--bg);
+      color: var(--fg);
+      font: 16px/1.6 ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+    }
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 32px;
+      max-width: 34rem;
+      width: 100%;
+    }
+    h1 { margin: 0 0 4px; font-size: 1.75rem; letter-spacing: -0.02em; }
+    p.sub { margin: 0 0 24px; color: var(--muted); }
+    ol { margin: 0; padding-left: 1.25rem; }
+    li { margin-bottom: 10px; }
+    code {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 5px;
+      padding: 1px 6px;
+      font-size: 0.875em;
+    }
+    .accent { color: var(--accent); font-weight: 600; }
+  </style>
+</head>
+<body>
+  <main class="card">
+    <h1>Hello, GitHub 👋</h1>
+    <p class="sub">This page lives in your repository. You made it.</p>
+    <ol>
+      <li>Open this file at <code>hello/index.html</code> in a text editor.</li>
+      <li>Change the heading above to say <span class="accent">anything you like</span>.</li>
+      <li>Save it, then run <code>git add .</code> and <code>git commit -m "My first edit"</code>.</li>
+      <li>Run <code>git push</code> and refresh your repo on GitHub.</li>
+    </ol>
+  </main>
+</body>
+</html>
